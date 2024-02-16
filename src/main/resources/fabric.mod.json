@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "${mod_id}",
+  "id": "set-spawn",
   "version": "${version}",
   "name": "Set Spawn 1.6.4",
   "description": "Sets the player's spawnpoint in SSG to specified coordinates.",

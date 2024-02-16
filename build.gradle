@@ -1,63 +1,60 @@
 plugins {
-    id 'fabric-loom' version '1.0-SNAPSHOT'
-    id 'legacy-looming' version "1.0-SNAPSHOT" // Version must be the same as fabric-loom's
-    id 'org.ajoberstar.grgit' version '4.1.0'
+    alias libs.plugins.fabric.loom
+    alias libs.plugins.legacy.looming
+    id "maven-publish"
 }
 
-sourceCompatibility = JavaVersion.VERSION_17
-targetCompatibility = JavaVersion.VERSION_17
+version = "$mod_version+$target_version"
+group = maven_group
 
-def getVersionMetadata() {
-    // CI builds version numbers
-    def build_id = System.getenv("RELEASE_NUMBER")
-    if (build_id != null) {
-        return build_id + ".0.0"
-    }
-
-    // Development builds
-    if (grgit == null) {
-        return "dev"
-    }
-
-    // Named development builds
-    def id = grgit.head().abbreviatedId
-    if (!grgit.status().clean) {
-        id += "-dirty"
-    }
-
-    return "rev.${id}"
+base {
+    archivesName = archives_name
 }
 
-archivesBaseName = "${project.mod_id}-${project.minecraft_version}"
-version = "${getVersionMetadata()}"
+repositories {
+    maven { url "https://s01.oss.sonatype.org/content/repositories/snapshots" }
+}
 
 loom {
-    setIntermediaryUrl('https://repo.legacyfabric.net/repository/legacyfabric/net/legacyfabric/intermediary/%1$s/intermediary-%1$s-v2.jar');
+    decompilers {
+        vineflower {
+            options.putAll(["mark-corresponding-synthetics": "1", "ind": "    "])
+        }
+    }
+    mixin {
+        useLegacyMixinAp = false
+    }
 }
 
 dependencies {
-    minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings "net.legacyfabric:yarn:${project.yarn_mappings}:v2"
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    minecraft libs.minecraft
+    mappings legacy.yarn(libs.versions.minecraft.get(), libs.versions.yarn.build.get())
+    modImplementation libs.fabric.loader
+    vineflowerDecompilerClasspath libs.vineflower
 }
 
 processResources {
-    inputs.property "mod_id", project.mod_id
-    inputs.property "version", project.version
-
-    filesMatching("fabric.mod.json") {
-        expand "mod_id": project.mod_id, "version": project.version, "minecraft_version": project.minecraft_version
+    filesMatching "fabric.mod.json", {
+        expand "version": version
     }
 }
 
 tasks.withType(JavaCompile).configureEach {
-    it.options.release = 17
+    it.options.encoding = "UTF-8"
+    if (JavaVersion.current().isJava9Compatible()) it.options.release.set(8)
 }
 
 java {
-    withSourcesJar()
+    sourceCompatibility = targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 jar {
-    from("LICENSE")
+    from "LICENSE"
+}
+
+publishing {
+    publications.create("mavenJava", MavenPublication) {
+        from components.java
+    }
+    repositories {}
 }
