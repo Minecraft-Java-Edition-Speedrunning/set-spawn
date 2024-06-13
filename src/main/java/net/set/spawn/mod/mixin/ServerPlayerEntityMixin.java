@@ -1,5 +1,6 @@
 package net.set.spawn.mod.mixin;
 
+import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.screen.ScreenHandlerListener;
@@ -11,7 +12,7 @@ import net.minecraft.world.World;
 import net.set.spawn.mod.*;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.*;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.*;
 
 @Mixin(ServerPlayerEntity.class)
 public abstract class ServerPlayerEntityMixin extends PlayerEntity implements ScreenHandlerListener {
@@ -22,13 +23,14 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity implements Sc
     public ServerPlayerEntityMixin(World world, BlockPos pos, float yaw, GameProfile profile) {
         super(world, pos, yaw, profile);
     }
-    @Inject(method = "moveToSpawn", at = @At("HEAD"), cancellable = true)
-    public void setspawnmod_setSpawn(ServerWorld world, CallbackInfo ci) {
+
+    @Inject(method = "getWorldSpawnPos", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/dimension/DimensionType;hasSkyLight()Z"), cancellable = true)
+    public void setspawnmod_setSpawn(ServerWorld world, BlockPos basePos, CallbackInfoReturnable<BlockPos> cir, @Local Box box) {
         if (SetSpawn.config.isEnabled() && SetSpawn.shouldModifySpawn) {
             SetSpawn.shouldModifySpawn = false;
             Seed seedObject = SetSpawn.findSeedObjectFromLong(world.getSeed());
             String response;
-            if (seedObject != null ) {
+            if (seedObject != null) {
                 int xFloor = MathHelper.floor(seedObject.getX());
                 int zFloor = MathHelper.floor(seedObject.getZ());
                 if ((Math.abs(xFloor - world.getSpawnPos().getX()) > this.server.getSpawnRadius(world))
@@ -40,11 +42,10 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity implements Sc
                 } else {
                     BlockPos spawnPos = SpawnLocatingAccessor.callFindOverworldSpawn(world, xFloor, zFloor);
                     if (spawnPos != null) {
-                        this.refreshPositionAndAngles(spawnPos, 0.0F, 0.0F);
-                        if (world.isSpaceEmpty(this)) {
+                        if (world.isSpaceEmpty(this, box.offset(spawnPos.toBottomCenterPos()))) {
                             SetSpawn.shouldSendErrorMessage = false;
                             SetSpawn.LOGGER.info("Spawning player at: " + seedObject.getX() + " " + spawnPos.getY() + " " + seedObject.getZ());
-                            ci.cancel();
+                            cir.setReturnValue(spawnPos);
                         } else {
                             SetSpawn.shouldSendErrorMessage = true;
                             response = "The coordinates given (" + seedObject.getX() + ", " + seedObject.getZ() + ") are obstructed by blocks. Not overriding player spawnpoint.";

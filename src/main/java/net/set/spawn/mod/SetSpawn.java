@@ -44,7 +44,7 @@ public class SetSpawn implements ClientModInitializer {
     }
 
     private static void writeDefaultProperties(File file) throws IOException {
-        Seed iceBoat = new Seed("-8724539567136308488", "23w13aorb Iceboat Seed", -22, -10);
+        Seed iceBoat = new Seed("-8724539567136308488", "Iceboat Seed", -22, -10);
         Seed[] seedsToWrite = new Seed[]{iceBoat};
         Config config = new Config(true, false, seedsToWrite);
 
