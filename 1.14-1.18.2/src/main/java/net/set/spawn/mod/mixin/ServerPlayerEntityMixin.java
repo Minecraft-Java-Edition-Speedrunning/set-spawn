@@ -47,9 +47,10 @@ public abstract class ServerPlayerEntityMixin {
         int spawnDiameter = spawnRadius * 2 + 1;
         int x = MathHelper.floor(seedObject.getX());
         int z = MathHelper.floor(seedObject.getZ());
-        int result = (x - worldSpawn.getX() + spawnRadius) + (z - worldSpawn.getZ() + spawnRadius) * spawnDiameter;
+        int xLocal = x - worldSpawn.getX() + spawnRadius;
+        int result = xLocal + (z - worldSpawn.getZ() + spawnRadius) * spawnDiameter;
 
-        if (result >= 0 && result < bounds) {
+        if (xLocal >=0 && xLocal < spawnDiameter && result >= 0 && result < bounds) {
             // we save the original result in case the set spawn is invalid, see fallbackOnInvalidSpawn
             System.out.println("Setting spawn");
             originalRandomResult.set(originalResult);
