@@ -87,7 +87,7 @@ public abstract class ServerPlayerEntityMixin {
     @Inject(method = "listenToScreenHandler", at = @At("TAIL"))
     private void sendErrorMessage(CallbackInfo ci) {
         if (this.setSpawnError != null) {
-            this.sendMessage(new LiteralText(this.setSpawnError + " This run is not verifiable.").setStyle(new Style().setFormatting(Formatting.RED)), false);
+            this.sendMessage(new LiteralText(this.setSpawnError + " This run is not verifiable.").formatted(Formatting.RED), false);
             this.setSpawnError = null;
         }
     }

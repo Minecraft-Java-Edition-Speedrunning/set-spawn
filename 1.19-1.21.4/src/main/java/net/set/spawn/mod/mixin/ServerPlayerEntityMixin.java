@@ -7,6 +7,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.*;
 import net.minecraft.util.math.random.Random;
 import net.set.spawn.mod.*;
@@ -106,7 +107,7 @@ public abstract class ServerPlayerEntityMixin {
     @Inject(method = "onSpawn", at = @At("TAIL"))
     private void sendErrorMessage(CallbackInfo ci) {
         if (this.setSpawnError != null) {
-            this.sendMessage(Text.literal("§c" + this.setSpawnError + " This run is not verifiable."), false);
+            this.sendMessage(Text.literal(this.setSpawnError + " This run is not verifiable.").formatted(Formatting.RED), false);
             this.setSpawnError = null;
         }
     }
