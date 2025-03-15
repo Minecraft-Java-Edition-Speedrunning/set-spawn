@@ -23,7 +23,7 @@ public abstract class ServerPlayerEntityMixin {
     private String setSpawnError;
 
     @Shadow
-    public abstract void method_5505(ChatMessage par1);
+    public abstract void method_5505(ChatMessage message);
 
     @WrapOperation(method = "<init>", at = @At(value = "INVOKE", target = "Ljava/util/Random;nextInt(I)I", ordinal = 0))
     private int setSpawnX(Random random, int bounds, Operation<Integer> original, @Local(argsOnly = true) MinecraftServer server, @Local BlockPos worldSpawn, @Local(ordinal = 3) int spawnRadius, @Share("seed") LocalRef<Seed> seed, @Share("zCoord") LocalRef<Integer> zCoord, @Share("isRandomSpawn") LocalBooleanRef isRandomSpawn) {

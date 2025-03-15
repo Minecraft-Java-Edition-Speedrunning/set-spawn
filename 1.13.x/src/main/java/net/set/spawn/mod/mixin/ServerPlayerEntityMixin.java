@@ -45,10 +45,14 @@ public abstract class ServerPlayerEntityMixin {
             return originalResult;
         }
 
-        // Transform x and z coordinates into correct Random#nextInt result.
-        int result = ((MathHelper.floor(seedObject.getX()) - worldSpawn.getX()) + spawnRadius) + ((MathHelper.floor(seedObject.getZ()) - worldSpawn.getZ()) + spawnRadius) * (spawnRadius * 2 + 1);
+        // Transform x and z coordinates into corresponding Random#nextInt result.
+        int spawnDiameter = spawnRadius * 2 + 1;
+        int x = MathHelper.floor(seedObject.getX());
+        int z = MathHelper.floor(seedObject.getZ());
+        int xLocal = x - worldSpawn.getX() + spawnRadius;
+        int result = xLocal + (z - worldSpawn.getZ() + spawnRadius) * spawnDiameter;
 
-        if (result >= 0 && result < bounds) {
+        if (xLocal >=0 && xLocal < spawnDiameter && result >= 0 && result < bounds) {
             // we save the original result in case the set spawn is invalid, see fallbackOnInvalidSpawn
             System.out.println("Setting spawn");
             originalRandomResult.set(originalResult);
@@ -83,7 +87,7 @@ public abstract class ServerPlayerEntityMixin {
     @Inject(method = "listenToScreenHandler", at = @At("TAIL"))
     private void sendErrorMessage(CallbackInfo ci) {
         if (this.setSpawnError != null) {
-            this.sendMessage(new LiteralText(this.setSpawnError + " This run is not verifiable.").setStyle(new Style().setFormatting(Formatting.RED)), false);
+            this.sendMessage(new LiteralText(this.setSpawnError + " This run is not verifiable.").formatted(Formatting.RED), false);
             this.setSpawnError = null;
         }
     }
