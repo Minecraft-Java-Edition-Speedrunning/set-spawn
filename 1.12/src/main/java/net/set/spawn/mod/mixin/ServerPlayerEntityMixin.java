@@ -32,7 +32,7 @@ public abstract class ServerPlayerEntityMixin {
 
         if (((MinecraftServerExtended) server).setspawnmod$shouldModifySpawn()) {
             ((MinecraftServerExtended) server).setspawnmod$setShouldModifySpawn(false);
-            seed.set(SetSpawn.findSeedObjectFromLong(server.method_0_6351().method_8412()));
+            seed.set(SetSpawn.findSeedObjectFromLong(server.getWorld().method_8412()));
         }
         Seed seedObject = seed.get();
         if (seedObject == null) {
