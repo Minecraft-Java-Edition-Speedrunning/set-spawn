@@ -96,7 +96,7 @@ public abstract class ServerPlayerEntityMixin {
                     @At(value = "INVOKE", target = "Lnet/minecraft/class_3218;method_8587(Lnet/minecraft/class_1297;Lnet/minecraft/class_238;)Z", ordinal = 1),
                     @At(value = "INVOKE", target = "Lnet/minecraft/class_3222;method_61274(Lnet/minecraft/class_3218;Lnet/minecraft/class_238;)Z", ordinal = 1)
             },
-            require = 0, allow = 1
+            require = 0, allow = 1, remap = false
     )
     private void failOnNonRandomSpawns2(CallbackInfoReturnable<Boolean> cir, @Share("seed") LocalRef<Seed> seed, @Share("isRandomSpawn") LocalBooleanRef isRandomSpawn) {
         if (!isRandomSpawn.get() && seed.get() != null) {

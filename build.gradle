@@ -12,5 +12,4 @@ dependencies {
     minecraft libs.minecraft
     mappings variantOf(libs.yarn.mappings) { classifier "v2" }
     modImplementation libs.fabric.loader
-    vineflowerDecompilerClasspath libs.vineflower
 }
