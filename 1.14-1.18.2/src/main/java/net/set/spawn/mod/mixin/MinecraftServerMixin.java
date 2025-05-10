@@ -22,7 +22,7 @@ public abstract class MinecraftServerMixin implements MinecraftServerExtended {
     @Group
     // method_3786 -> createWorlds
     // LevelProperties#isInitialized
-    @ModifyExpressionValue(method = "method_3786(Lnet/minecraft/class_29;Lnet/minecraft/class_31;Lnet/minecraft/class_1940;Lnet/minecraft/class_3949;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/class_31;method_222()Z", remap = false), require = 0)
+    @ModifyExpressionValue(method = "method_3786(Lnet/minecraft/class_29;Lnet/minecraft/class_31;Lnet/minecraft/class_1940;Lnet/minecraft/class_3949;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/class_31;method_222()Z"), require = 0, remap = false)
     private boolean checkIfNewWorld2(boolean initialized) {
         this.shouldModifySpawn = !initialized;
         return initialized;
