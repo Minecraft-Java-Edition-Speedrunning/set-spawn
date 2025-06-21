@@ -94,10 +94,12 @@ public abstract class ServerPlayerEntityMixin {
 
     @Dynamic
     @Group
-    @Inject(method = "method_14235(Lnet/minecraft/class_1703;)V", at = @At("TAIL"), require = 0)
+    @Inject(method = "method_14235(Lnet/minecraft/class_1703;)V", at = @At("TAIL"), require = 0, remap = false)
     private void sendErrorMessage2(CallbackInfo ci) {
         if (this.setSpawnError != null) {
-            this.sendMessage(new LiteralText(this.setSpawnError + " This run is not verifiable.").formatted(Formatting.RED), false);
+            // MutableText#formatted moved from BaseText in 1.16, can't compile against it
+            BaseText message = new LiteralText(this.setSpawnError + " This run is not verifiable.");
+            this.sendMessage(message.setStyle(message.getStyle().withFormatting(Formatting.RED)), false);
             this.setSpawnError = null;
         }
     }
