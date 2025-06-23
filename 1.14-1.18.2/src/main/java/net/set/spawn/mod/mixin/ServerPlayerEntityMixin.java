@@ -33,7 +33,7 @@ public abstract class ServerPlayerEntityMixin {
     public abstract ServerWorld getServerWorld();
 
     @WrapOperation(method = "moveToSpawn", at = @At(value = "INVOKE", target = "Ljava/util/Random;nextInt(I)I"))
-    private int setSpawn(Random random, int bounds, Operation<Integer> original, @Local(ordinal = 0) BlockPos worldSpawn, @Local(ordinal = 0) int spawnRadius, @Share("seed") LocalRef<Seed> seed, @Share("originalRandomResult") LocalRef<Integer> originalRandomResult) {
+    private int setSpawn(Random random, int bounds, Operation<Integer> original, @Local(ordinal = 0) BlockPos worldSpawn, @Local(ordinal = 0) int spawnRadius, @Share("seed") LocalRef<Seed> seed, @Share("originalRandomResult") LocalRef<Integer> originalRandomResult, @Share("newRandomValue") LocalRef<Integer> newRandomValue) {
         int originalResult = original.call(random, bounds);
 
         if (((MinecraftServerExtended) this.server).setspawnmod$shouldModifySpawn()) {
@@ -53,8 +53,9 @@ public abstract class ServerPlayerEntityMixin {
 
         if (xLocal >=0 && xLocal < spawnDiameter && result >= 0 && result < bounds) {
             // we save the original result in case the set spawn is invalid, see fallbackOnInvalidSpawn
-            System.out.println("Setting spawn");
             originalRandomResult.set(originalResult);
+            newRandomValue.set(result);
+            System.out.println("Setting spawn");
             return result;
         } else {
             this.setSpawnError = "The X or Z coordinates given (" + seed.get().getX() + ", " + seed.get().getZ() + ") are more than the worlds spawn radius (" + spawnRadius + " blocks) away from the world spawn. Not overriding player spawnpoint.";
@@ -63,7 +64,7 @@ public abstract class ServerPlayerEntityMixin {
     }
 
     @ModifyVariable(method = "moveToSpawn", at = @At(value = "LOAD", ordinal = 0), ordinal = 5)
-    private int fallbackOnInvalidSpawn(int p, @Local(ordinal = 4) LocalIntRef o, @Share("seed") LocalRef<Seed> seed, @Share("originalRandomResult") LocalRef<Integer> originalRandomResult) {
+    private int fallbackOnInvalidSpawn(int p, @Local(ordinal = 2) int k, @Local(ordinal = 4) LocalIntRef o, @Share("seed") LocalRef<Seed> seed, @Share("originalRandomResult") LocalRef<Integer> originalRandomResult, @Share("newRandomValue") LocalRef<Integer> newRandomValue) {
         // checks if the for loop is on its second iteration (p == 1), meaning the setspawn given spawn was invalid
         // and restores the original result of Random#nextInt
         if (p == 1 && originalRandomResult.get() != null) {
@@ -72,6 +73,14 @@ public abstract class ServerPlayerEntityMixin {
             p = 0;
 
             this.setSpawnError = "There is no valid spawning location at the specified coordinates (" + seed.get().getX() + ", " + seed.get().getZ() + "). Not overriding player spawnpoint.";
+        }
+        // if we made it to the end of the loop after an obstructed spawn and didn't find another non-obstructed spawn
+        // redo the last iteration of the loop with the choice obstructed spawn
+        if (p == k && originalRandomResult.get() == null && newRandomValue.get() != null) {
+            o.set(newRandomValue.get());
+            newRandomValue.set(null);
+            p = k - 1;
+            this.setSpawnError = null;
         }
         return p;
     }
@@ -84,9 +93,11 @@ public abstract class ServerPlayerEntityMixin {
     }
 
     @Group(min = 1, max = 1)
+    // 1.14-1.16.5
     @Inject(method = "onSpawn", at = @At("TAIL"), require = 0)
     private void sendErrorMessage(CallbackInfo ci) {
         if (this.setSpawnError != null) {
+            // it is not possible to fix this without more subprojects. you are warned.
             this.sendMessage(new LiteralText("§c" + this.setSpawnError + " This run is not verifiable."), false);
             this.setSpawnError = null;
         }
@@ -94,12 +105,11 @@ public abstract class ServerPlayerEntityMixin {
 
     @Dynamic
     @Group
+    // 1.17-1.18.2
     @Inject(method = "method_14235(Lnet/minecraft/class_1703;)V", at = @At("TAIL"), require = 0, remap = false)
     private void sendErrorMessage2(CallbackInfo ci) {
         if (this.setSpawnError != null) {
-            // MutableText#formatted moved from BaseText in 1.16, can't compile against it
-            BaseText message = new LiteralText(this.setSpawnError + " This run is not verifiable.");
-            this.sendMessage(message.setStyle(message.getStyle().withFormatting(Formatting.RED)), false);
+            this.sendMessage(new LiteralText(this.setSpawnError + " This run is not verifiable.").formatted(Formatting.RED), false);
             this.setSpawnError = null;
         }
     }

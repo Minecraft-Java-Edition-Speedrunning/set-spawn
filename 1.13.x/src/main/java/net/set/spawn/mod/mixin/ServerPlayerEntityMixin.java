@@ -33,7 +33,7 @@ public abstract class ServerPlayerEntityMixin {
     public abstract ServerWorld getServerWorld();
 
     @WrapOperation(method = "method_21281", at = @At(value = "INVOKE", target = "Ljava/util/Random;nextInt(I)I"))
-    private int setSpawn(Random random, int bounds, Operation<Integer> original, @Local(ordinal = 0) BlockPos worldSpawn, @Local(ordinal = 0) int spawnRadius, @Share("seed") LocalRef<Seed> seed, @Share("originalRandomResult") LocalRef<Integer> originalRandomResult) {
+    private int setSpawn(Random random, int bounds, Operation<Integer> original, @Local(ordinal = 0) BlockPos worldSpawn, @Local(ordinal = 0) int spawnRadius, @Share("seed") LocalRef<Seed> seed, @Share("originalRandomResult") LocalRef<Integer> originalRandomResult, @Share("newRandomValue") LocalRef<Integer> newRandomValue) {
         int originalResult = original.call(random, bounds);
 
         if (((MinecraftServerExtended) this.server).setspawnmod$shouldModifySpawn()) {
@@ -54,8 +54,9 @@ public abstract class ServerPlayerEntityMixin {
 
         if (xLocal >=0 && xLocal < spawnDiameter && result >= 0 && result < bounds) {
             // we save the original result in case the set spawn is invalid, see fallbackOnInvalidSpawn
-            System.out.println("Setting spawn");
             originalRandomResult.set(originalResult);
+            newRandomValue.set(result);
+            System.out.println("Setting spawn");
             return result;
         } else {
             this.setSpawnError = "The X or Z coordinates given (" + seed.get().getX() + ", " + seed.get().getZ() + ") are more than the worlds spawn radius (" + spawnRadius + " blocks) away from the world spawn. Not overriding player spawnpoint.";
@@ -64,7 +65,7 @@ public abstract class ServerPlayerEntityMixin {
     }
 
     @ModifyVariable(method = "method_21281", at = @At(value = "LOAD", ordinal = 0), ordinal = 5)
-    private int fallbackOnInvalidSpawn(int p, @Local(ordinal = 4) LocalIntRef o, @Share("seed") LocalRef<Seed> seed, @Share("originalRandomResult") LocalRef<Integer> originalRandomResult) {
+    private int fallbackOnInvalidSpawn(int p, @Local(ordinal = 2) int k, @Local(ordinal = 4) LocalIntRef o, @Share("seed") LocalRef<Seed> seed, @Share("originalRandomResult") LocalRef<Integer> originalRandomResult, @Share("newRandomValue") LocalRef<Integer> newRandomValue) {
         // checks if the for loop is on its second iteration (p == 1), meaning the setspawn given spawn was invalid
         // and restores the original result of Random#nextInt
         if (p == 1 && originalRandomResult.get() != null) {
@@ -73,6 +74,14 @@ public abstract class ServerPlayerEntityMixin {
             p = 0;
 
             this.setSpawnError = "There is no valid spawning location at the specified coordinates (" + seed.get().getX() + ", " + seed.get().getZ() + "). Not overriding player spawnpoint.";
+        }
+        // if we made it to the end of the loop after an obstructed spawn and didn't find another non-obstructed spawn
+        // redo the last iteration of the loop with the choice obstructed spawn
+        if (p == k && originalRandomResult.get() == null && newRandomValue.get() != null) {
+            o.set(newRandomValue.get());
+            newRandomValue.set(null);
+            p = k - 1;
+            this.setSpawnError = null;
         }
         return p;
     }
