@@ -3,7 +3,7 @@
   "id": "setspawnmod-common",
   "version": "${version}",
   "name": "Set Spawn Common",
-  "description": "Library code for the Set Spawn mod.",
+  "description": "Library code for the Set Spawn mod",
   "authors": [
     {
       "name": "bdamja",
@@ -30,5 +30,13 @@
   "depends": {
     "fabricloader": ">=0.15.0",
     "minecraft": "*"
+  },
+  "custom": {
+    "modmenu": {
+      "badges": [
+        "library"
+      ],
+      "parent": "setspawnmod"
+    }
   }
 }
