@@ -1,5 +1,6 @@
 package net.set.spawn.mod.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.*;
 import com.llamalad7.mixinextras.sugar.*;
 import com.llamalad7.mixinextras.sugar.ref.*;
@@ -33,7 +34,16 @@ public abstract class ServerPlayerEntityMixin {
     public abstract ServerWorld getServerWorld();
 
     @WrapOperation(method = "moveToSpawn", at = @At(value = "INVOKE", target = "Ljava/util/Random;nextInt(I)I"))
-    private int setSpawn(Random random, int bounds, Operation<Integer> original, @Local(ordinal = 0) BlockPos worldSpawn, @Local(ordinal = 0) int spawnRadius, @Share("seed") LocalRef<Seed> seed, @Share("originalRandomResult") LocalRef<Integer> originalRandomResult, @Share("newRandomValue") LocalRef<Integer> newRandomValue) {
+    private int setSpawn(
+            Random random,
+            int bounds,
+            Operation<Integer> original,
+            @Local(ordinal = 0) BlockPos worldSpawn,
+            @Local(ordinal = 0) int spawnRadius,
+            @Share("seed") LocalRef<Seed> seed,
+            @Share("originalRandomResult") LocalRef<Integer> originalRandomResult,
+            @Share("newRandomValue") LocalRef<Integer> newRandomValue
+    ) {
         int originalResult = original.call(random, bounds);
 
         if (((MinecraftServerExtended) this.server).setspawnmod$shouldModifySpawn()) {
@@ -51,7 +61,7 @@ public abstract class ServerPlayerEntityMixin {
         int xLocal = x - worldSpawn.getX() + spawnRadius;
         int result = xLocal + (z - worldSpawn.getZ() + spawnRadius) * spawnDiameter;
 
-        if (xLocal >=0 && xLocal < spawnDiameter && result >= 0 && result < bounds) {
+        if (xLocal >= 0 && xLocal < spawnDiameter && result >= 0 && result < bounds) {
             // we save the original result in case the set spawn is invalid, see fallbackOnInvalidSpawn
             originalRandomResult.set(originalResult);
             newRandomValue.set(result);
@@ -63,8 +73,36 @@ public abstract class ServerPlayerEntityMixin {
         return originalResult;
     }
 
+    @ModifyExpressionValue(
+            method = "moveToSpawn",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/server/network/SpawnLocating;findOverworldSpawn(Lnet/minecraft/server/world/ServerWorld;IIZ)Lnet/minecraft/util/math/BlockPos;"
+            )
+    )
+    private BlockPos captureIfHasGrassBlock(
+            BlockPos blockPos,
+            @Share("originalRandomResult") LocalRef<Integer> originalRandomResult,
+            @Share("validIncludingObstructed") LocalBooleanRef validIncludingObstructed
+    ) {
+        if (originalRandomResult.get() != null) {
+            // whether or not the spawn is obstructed, it has a grass block above sea level and is valid as an obstructed spawn if all other spawns are obstructed or invalid
+            validIncludingObstructed.set(blockPos != null);
+        }
+        return blockPos;
+    }
+
     @ModifyVariable(method = "moveToSpawn", at = @At(value = "LOAD", ordinal = 0), ordinal = 5)
-    private int fallbackOnInvalidSpawn(int p, @Local(ordinal = 2) int k, @Local(ordinal = 4) LocalIntRef o, @Share("seed") LocalRef<Seed> seed, @Share("originalRandomResult") LocalRef<Integer> originalRandomResult, @Share("newRandomValue") LocalRef<Integer> newRandomValue) {
+    private int fallbackOnInvalidSpawn(
+            int p,
+            @Local(ordinal = 2) int k,
+            @Local(ordinal = 3) int n,
+            @Local(ordinal = 4) LocalIntRef o,
+            @Share("seed") LocalRef<Seed> seed,
+            @Share("originalRandomResult") LocalRef<Integer> originalRandomResult,
+            @Share("newRandomValue") LocalRef<Integer> newRandomValue,
+            @Share("validIncludingObstructed") LocalBooleanRef validIncludingObstructed
+    ) {
         // checks if the for loop is on its second iteration (p == 1), meaning the setspawn given spawn was invalid
         // and restores the original result of Random#nextInt
         if (p == 1 && originalRandomResult.get() != null) {
@@ -76,8 +114,8 @@ public abstract class ServerPlayerEntityMixin {
         }
         // if we made it to the end of the loop after an obstructed spawn and didn't find another non-obstructed spawn
         // redo the last iteration of the loop with the choice obstructed spawn
-        if (p == k && originalRandomResult.get() == null && newRandomValue.get() != null) {
-            o.set(newRandomValue.get());
+        if (p == k && originalRandomResult.get() == null && newRandomValue.get() != null && validIncludingObstructed.get()) {
+            o.set(newRandomValue.get() - n * (p - 1));
             newRandomValue.set(null);
             p = k - 1;
             this.setSpawnError = null;
@@ -85,7 +123,14 @@ public abstract class ServerPlayerEntityMixin {
         return p;
     }
 
-    @Inject(method = "moveToSpawn", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerPlayerEntity;refreshPositionAndAngles(Lnet/minecraft/util/math/BlockPos;FF)V", ordinal = 1))
+    @Inject(
+            method = "moveToSpawn",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/server/network/ServerPlayerEntity;refreshPositionAndAngles(Lnet/minecraft/util/math/BlockPos;FF)V",
+                    ordinal = 1
+            )
+    )
     private void failOnNonRandomSpawns(CallbackInfo ci, @Share("seed") LocalRef<Seed> seed) {
         if (seed.get() != null) {
             this.setSpawnError = "Failed to apply SetSpawn configuration because the spawn was not random. Not overriding player spawnpoint.";
