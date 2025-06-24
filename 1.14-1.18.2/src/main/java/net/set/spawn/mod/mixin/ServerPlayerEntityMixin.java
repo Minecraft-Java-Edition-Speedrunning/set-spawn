@@ -80,6 +80,11 @@ public abstract class ServerPlayerEntityMixin {
                             value = "INVOKE",
                             target = "Lnet/minecraft/server/network/SpawnLocating;findOverworldSpawn(Lnet/minecraft/server/world/ServerWorld;IIZ)Lnet/minecraft/util/math/BlockPos;"
                     ),
+                    // 1.18+ findOverworldSpawn, no boolean
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/class_5322;method_29194(Lnet/minecraft/class_3218;II)Lnet/minecraft/class_2338;"
+                    ),
                     @At(
                             value = "INVOKE",
                             // Dimension#getTopSpawningBlockPosition
