@@ -19,6 +19,11 @@
     "tildejustin",
     "contaria"
   ],
+  "contact": {
+    "homepage": "https://github.com/Minecraft-Java-Edition-Speedrunning/set-spawn",
+    "sources": "https://github.com/Minecraft-Java-Edition-Speedrunning/set-spawn",
+    "issues": "https://github.com/Minecraft-Java-Edition-Speedrunning/set-spawn/issues"
+  },
   "license": "LGPL-3.0-only",
   "icon": "assets/setspawnmod/icon.png",
   "environment": "*",
